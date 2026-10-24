@@ -1,0 +1,102 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/gargiolastech/gtdi-schema/main/v1/gtdilifetime.schema.json",
+  "title": "gtdi .gtdilifetime.json",
+  "description": "Configurazione di gtdi (formato version 1, sperimentale fino a 1.0.0).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "version": { "const": 1 },
+    "exclude": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "projects": { "type": "array", "items": { "type": "string" } },
+        "paths": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "hosts": { "type": "array", "items": { "type": "string" } },
+    "builtInRules": {
+      "type": "object",
+      "propertyNames": { "pattern": "^(DI[0-9]{3}[a-z]?|GTL00[12]|GT00[1-6])$" },
+      "additionalProperties": { "$ref": "#/$defs/severity" }
+    },
+    "rules": { "type": "array", "items": { "$ref": "#/$defs/rule" } },
+    "registrations": { "type": "array", "items": { "$ref": "#/$defs/registration" } },
+    "suppressions": { "type": "array", "items": { "$ref": "#/$defs/suppression" } }
+  },
+  "$defs": {
+    "severity": { "enum": ["error", "warning", "info", "none"] },
+    "lifetime": { "enum": ["Singleton", "Scoped", "Transient"] },
+    "lifetimes": { "type": "array", "items": { "$ref": "#/$defs/lifetime" } },
+    "selector": {
+      "type": "object",
+      "additionalProperties": false,
+      "minProperties": 1,
+      "properties": {
+        "nameEndsWith": { "type": "string" },
+        "nameStartsWith": { "type": "string" },
+        "nameMatches": { "type": "string" },
+        "namespace": { "type": "string" },
+        "implements": { "type": "string" },
+        "project": { "type": "string" },
+        "lifetime": { "$ref": "#/$defs/lifetimes" },
+        "isMediatRHandler": { "type": "boolean" },
+        "service": { "$ref": "#/$defs/selector" }
+      }
+    },
+    "assert": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "lifetime": { "$ref": "#/$defs/lifetimes" },
+        "lifetimeNot": { "$ref": "#/$defs/lifetimes" },
+        "mustNotDependOn": { "$ref": "#/$defs/selector" },
+        "mustNotDependOnTransitively": { "$ref": "#/$defs/selector" },
+        "dependenciesMustLiveAtLeastAs": { "const": "self" },
+        "maxConstructorDependencies": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "rule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "select", "assert"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Libero, ma non puo' iniziare con DI, GT o GTL (GT001-GT006 sostituiscono la convenzione omonima).",
+          "pattern": "^(GT00[1-6]|(?!DI|GT)[A-Za-z0-9_.-]+)$"
+        },
+        "description": { "type": "string" },
+        "severity": { "$ref": "#/$defs/severity" },
+        "select": { "$ref": "#/$defs/selector" },
+        "assert": { "$ref": "#/$defs/assert" }
+      }
+    },
+    "registration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["select", "as", "lifetime"],
+      "properties": {
+        "host": { "type": "string" },
+        "select": { "$ref": "#/$defs/selector" },
+        "as": { "enum": ["self", "implementedInterfaces", "matchingInterface"] },
+        "lifetime": { "$ref": "#/$defs/lifetime" }
+      }
+    },
+    "suppression": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["rule", "reason"],
+      "anyOf": [{ "required": ["target"] }, { "required": ["path"] }],
+      "properties": {
+        "rule": { "type": "string" },
+        "target": { "type": "string" },
+        "path": { "type": "string" },
+        "reason": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}
